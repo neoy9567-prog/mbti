@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MBTI 性格类型测试（精准版）</title>
+<style>
+:root{color-scheme:light;--bg:#f6f5f1;--card:#fff;--ink:#1f2328;--sub:#5b636e;--line:#e3e1da;--acc:#2f5d50;--acc2:#c7883a;--warn:#b5482f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;line-height:1.65}
+.wrap{max-width:760px;margin:0 auto;padding:32px 20px 64px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:32px;margin-bottom:20px}
+h1{font-size:26px;margin:0 0 6px}
+h2{font-size:19px;margin:0 0 12px}
+h3{font-size:16px;margin:18px 0 8px}
+p{margin:8px 0}
+.muted{color:var(--sub);font-size:14px}
+ul.rules{padding-left:20px;margin:10px 0}
+ul.rules li{margin:6px 0}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:#fff;padding:10px 20px}
+button.primary{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}
+button.primary:hover{filter:brightness(1.08)}
+button:disabled{opacity:.4;cursor:not-allowed}
+.progress{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:6px 0 24px}
+.progress>div{height:100%;background:var(--acc);transition:width .25s}
+.qmeta{display:flex;justify-content:space-between;font-size:13px;color:var(--sub)}
+.qtext{font-size:20px;font-weight:600;min-height:72px;margin:8px 0 28px}
+.scale{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.scale .lab{font-size:13px;color:var(--sub);width:56px;text-align:center}
+.opt{width:46px;height:46px;border-radius:50%;border:2px solid var(--line);background:#fff;padding:0;transition:all .12s;flex-shrink:0}
+.opt:nth-child(2),.opt:nth-child(8){width:54px;height:54px;border-color:#b9c8c2}
+.opt:nth-child(3),.opt:nth-child(7){width:48px;height:48px}
+.opt:nth-child(5){width:38px;height:38px}
+.opt:hover{border-color:var(--acc)}
+.opt.sel{background:var(--acc);border-color:var(--acc)}
+.nav{display:flex;justify-content:space-between;margin-top:28px}
+.hint{font-size:12px;color:var(--sub);text-align:center;margin-top:14px}
+.type{font-size:56px;font-weight:800;letter-spacing:6px;color:var(--acc);margin:4px 0}
+.dim{margin:16px 0}
+.dimhead{display:flex;justify-content:space-between;font-size:14px}
+.bar{position:relative;height:14px;background:#ece9e1;border-radius:7px;margin:6px 0;overflow:hidden}
+.bar .fill{position:absolute;top:0;height:100%;background:var(--acc)}
+.bar .mid{position:absolute;left:50%;top:-2px;width:2px;height:18px;background:#999}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:10px;background:#eef3f1;color:var(--acc);margin-left:6px}
+.tag.weak{background:#fbefe3;color:var(--acc2)}
+.tag.bad{background:#f9e6e1;color:var(--warn)}
+.quality li{margin:4px 0}
+.ok{color:var(--acc)} .no{color:var(--warn)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.alt{border:1px solid var(--line);border-radius:10px;padding:14px;font-size:14px}
+.alt b{font-size:18px;color:var(--acc)}
+.funcs span{display:inline-block;border:1px solid var(--line);border-radius:8px;padding:4px 10px;margin:4px 6px 4px 0;font-size:14px}
+.banner{background:#eef3f1;border-radius:10px;padding:14px 16px;font-size:14px;margin:12px 0}
+.banner.warn{background:#fbefe3}
+.banner.bad{background:#f9e6e1}
+@media(max-width:560px){.card{padding:22px}.opt{width:36px!important;height:36px!important}.scale .lab{width:40px;font-size:12px}.grid2{grid-template-columns:1fr}.qtext{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+/* =========================================================
+   题库
+   d: 维度  k: +1 表示同意倾向第一个字母(E/S/T/J)，-1 倾向第二个字母(I/N/F/P)
+   每个维度主测 16 题（正反各 8），加测 6 题（正反各 3）
+   正反向平衡可抵消"习惯性同意"带来的偏差
+   ========================================================= */
+const MAIN = [
+ // ---- E / I ----
+ ['EI', 1,'和一群人热闹地相处一整天后，我通常感觉精力更充沛。'],
+ ['EI', 1,'我喜欢边说边想，常常在和别人讨论的过程中理清思路。'],
+ ['EI', 1,'在聚会上，我会主动和不认识的人搭话。'],
+ ['EI', 1,'一个人待太久，我会感到憋闷，想找人聊聊。'],
+ ['EI', 1,'遇到问题时，我倾向于先找人讨论，而不是自己先想清楚。'],
+ ['EI', 1,'我的朋友圈子很广，认识很多不同领域的人。'],
+ ['EI', 1,'在会议或课堂上，我通常愿意率先发言。'],
+ ['EI', 1,'周末如果没有任何社交安排，我会觉得有点无聊。'],
+ ['EI',-1,'社交活动结束后，我需要独处一段时间来恢复精力。','c1'],
+ ['EI',-1,'我习惯先在心里想清楚，再开口表达。'],
+ ['EI',-1,'比起大型聚会，我更喜欢和一两个熟人深入地聊。'],
+ ['EI',-1,'别人常说，要真正了解我需要花一段时间。'],
+ ['EI',-1,'电话突然响起时，我常常希望对方改成发消息。'],
+ ['EI',-1,'我享受长时间独自专注地做一件事。'],
+ ['EI',-1,'在陌生的群体里，我通常先观察，较少主动说话。'],
+ ['EI',-1,'我更关注内心的想法和感受，而不是外部发生的各种活动。'],
+ // ---- S / N ----
+ ['SN', 1,'我更相信亲身经历和事实，而不是推测和预感。'],
+ ['SN', 1,'学新东西时，我喜欢先看具体的例子和操作步骤。'],
+ ['SN', 1,'我注重细节，常能发现别人忽略的具体小问题。'],
+ ['SN', 1,'我偏好用经过验证的方法做事，而不是尝试新奇的方法。'],
+ ['SN', 1,'讲述一件事时，我倾向于按实际发生的顺序把细节讲清楚。'],
+ ['SN', 1,'我更关注眼下需要处理的实际问题，而不是遥远的可能性。'],
+ ['SN', 1,'我觉得过于抽象的理论讨论有点不切实际。'],
+ ['SN', 1,'我对数字、日期、具体事实记得比较清楚。'],
+ ['SN',-1,'我经常思考事物背后的含义以及它们之间的联系。','c4'],
+ ['SN',-1,'"如果……会怎样"这类问题很容易让我浮想联翩。'],
+ ['SN',-1,'我更喜欢构想未来的可能性，而不是关注现状。'],
+ ['SN',-1,'看说明书时，我常常跳过步骤，凭直觉把握整体。'],
+ ['SN',-1,'我喜欢比喻、象征和言外之意。'],
+ ['SN',-1,'重复、按部就班的工作很容易让我厌倦，总想找新做法。'],
+ ['SN',-1,'别人说我思维跳跃，常从一个话题跳到看似无关的另一个话题。'],
+ ['SN',-1,'我常有一种"预感"事情会如何发展，事后往往被证实。'],
+ // ---- T / F ----
+ ['TF', 1,'做决定时，我更看重逻辑和客观分析，而不是人的感受。','c3'],
+ ['TF', 1,'我认为直接指出别人的错误，比照顾对方的面子更重要。'],
+ ['TF', 1,'争论时，我更在意谁的观点正确，而不是大家是否和气。'],
+ ['TF', 1,'我会按原则公平对待每个人，即使这会让某些人不高兴。'],
+ ['TF', 1,'别人向我倾诉烦恼时，我的第一反应是帮他分析、解决问题。'],
+ ['TF', 1,'我能比较冷静地提出批评意见，不太受情绪影响。'],
+ ['TF', 1,'我认为"合理"比"合情"更重要。'],
+ ['TF', 1,'评价一个方案时，我主要看它是否高效、逻辑是否严密。'],
+ ['TF',-1,'做决定时，我会优先考虑这个决定对相关的人有什么影响。'],
+ ['TF',-1,'我很容易察觉到别人情绪上的变化。'],
+ ['TF',-1,'维持团队或家庭的和谐对我来说非常重要。'],
+ ['TF',-1,'拒绝别人的请求会让我感到为难甚至内疚。'],
+ ['TF',-1,'比起数据，打动人心的故事更容易说服我。'],
+ ['TF',-1,'给别人提意见时，我会特别注意措辞，避免伤害对方。'],
+ ['TF',-1,'我个人的价值观和信念，是我做决定的重要依据。'],
+ ['TF',-1,'看到别人难过，即使与我无关，我的心情也会受影响。'],
+ // ---- J / P ----
+ ['JP', 1,'我喜欢事先做好计划，并按计划执行。','c2'],
+ ['JP', 1,'任务有截止日期时，我通常会提前完成。'],
+ ['JP', 1,'事情悬而未决会让我不安，我希望尽快定下来。'],
+ ['JP', 1,'我的工作区和物品通常整齐有序。'],
+ ['JP', 1,'我喜欢列待办清单，并享受逐项打勾的感觉。'],
+ ['JP', 1,'计划被临时打乱会让我感到烦躁。'],
+ ['JP', 1,'我习惯先把正事做完，再去娱乐休息。'],
+ ['JP', 1,'出行前，我会提前安排好行程和各种细节。'],
+ ['JP',-1,'我喜欢保留选择的余地，不急于做决定。'],
+ ['JP',-1,'我往往在截止日期临近时效率最高。'],
+ ['JP',-1,'我享受即兴、随性的安排。'],
+ ['JP',-1,'我常同时进行好几件事，换着做。'],
+ ['JP',-1,'计划对我来说只是参考，随时都可以调整。'],
+ ['JP',-1,'固定的流程和日程会让我感到被束缚。'],
+ ['JP',-1,'得到新信息后改变原来的决定，对我来说很自然，不觉得困扰。'],
+ ['JP',-1,'我的东西摆放比较随意，但我大体知道它们在哪。'],
+];
+
+/* 加测题：主测后某维度处于边界(|得分|<12%)时追加 */
+const TIE = [
+ ['EI', 1,'我做事时喜欢身边有人、有些动静。'],
+ ['EI', 1,'认识新朋友对我来说是件轻松愉快的事。'],
+ ['EI', 1,'我常常是话说出口之后，才意识到自己真正的想法。'],
+ ['EI',-1,'如果可以选择，我宁愿把事情写下来，也不太想当面讲。'],
+ ['EI',-1,'被很多人同时关注时，我会不太自在，即使是正面的关注。'],
+ ['EI',-1,'私人时间和空间对我很重要，频繁被打扰会让我很累。'],
+ ['SN', 1,'我更欣赏务实、能落地的方案，而不是有创意但难执行的方案。'],
+ ['SN', 1,'我做判断主要依靠具体数据和过去的经验。'],
+ ['SN', 1,'我享受用双手和感官去体验事物，比如做饭、运动、手工。'],
+ ['SN',-1,'我常在脑海中同时推演好几种未来的走向。'],
+ ['SN',-1,'我对抽象的概念和理论模型很感兴趣。'],
+ ['SN',-1,'看到一样东西，我会自然地联想到它可以怎样被改变或改进。'],
+ ['TF', 1,'只要规则合理，即使遇到特殊情况也应该一视同仁地执行。'],
+ ['TF', 1,'我曾被人说过于理性，甚至有点"冷"。'],
+ ['TF', 1,'比起被认为善良，我更希望被认为有能力。'],
+ ['TF',-1,'做选择时，我常问自己"这件事对我、对他人意味着什么"。'],
+ ['TF',-1,'我倾向于先看到别人的优点，并及时给予肯定。'],
+ ['TF',-1,'团队出现冲突时，我会主动去调和关系。'],
+ ['JP', 1,'做完决定后，我很少再反复考虑。'],
+ ['JP', 1,'我喜欢事情有明确的结构和规则。'],
+ ['JP', 1,'重要的事（如假期、大笔开支），我会提前很久就规划好。'],
+ ['JP',-1,'我喜欢边做边看，而不是一开始就把步骤全部定好。'],
+ ['JP',-1,'意外的变化对我来说常常是有趣的，而不是麻烦。'],
+ ['JP',-1,'我常常同时开启好几个项目，但不一定都能完成。'],
+];
+
+/* 质量检测题：与主测某题意思相同（用于检查前后一致性），以及一道注意力题，均不计分 */
+const CHECKS = [
+ {chk:'c1', t:'参加完热闹的活动后，我需要安静独处来"充电"。'},
+ {chk:'c2', t:'我倾向于提前规划，而不是到时候再临场决定。'},
+ {chk:'c3', t:'做选择时，客观分析比个人感受对我更有分量。'},
+ {chk:'c4', t:'我常常琢磨一件事背后更深层的意义。'},
+ {attn:3,  t:'这是一道注意力检测题，请直接选择"有点不同意"。'},
+];
+
+const DIMS = {
+ EI:{a:'E',b:'I',an:'外向',bn:'内向',desc:'精力来源：外部世界与人 vs 内心世界与独处'},
+ SN:{a:'S',b:'N',an:'实感',bn:'直觉',desc:'信息获取：具体事实与经验 vs 模式、联想与可能性'},
+ TF:{a:'T',b:'F',an:'思考',bn:'情感',desc:'决策方式：客观逻辑与原则 vs 价值观与人际影响'},
+ JP:{a:'J',b:'P',an:'判断',bn:'感知',desc:'生活方式：计划、确定与收尾 vs 弹性、开放与随机应变'},
+};
+const SCALE_LABELS = ['非常不同意','不同意','有点不同意','中立','有点同意','同意','非常同意'];
+
+const TYPES = {
+ INTJ:{n:'战略家',f:['Ni 内倾直觉','Te 外倾思考','Fi 内倾情感','Se 外倾感觉'],s:'独立、有远见的系统规划者。善于看清长期趋势，并制定严密的计划去实现目标，对能力和效率要求很高。',g:'长远规划、独立思考、把复杂问题系统化、意志坚定',b:'容易显得冷淡或傲慢；对低效容忍度低；可能忽视他人情绪与当下细节'},
+ INTP:{n:'思想家',f:['Ti 内倾思考','Ne 外倾直觉','Si 内倾感觉','Fe 外倾情感'],s:'追求精确与原理的分析者。热衷于理解事物如何运作，喜欢构建理论框架，对逻辑漏洞非常敏感。',g:'深度分析、发现逻辑矛盾、思维灵活、客观中立',b:'容易想多做少；对日常事务缺乏耐心；表达情感较困难'},
+ ENTJ:{n:'统帅',f:['Te 外倾思考','Ni 内倾直觉','Se 外倾感觉','Fi 内倾情感'],s:'果断的组织者和领导者。善于设定目标、调动资源、推动执行，天然倾向于掌控局面。',g:'决策果断、组织能力强、目标导向、敢于挑战',b:'可能显得强势、急躁；容易忽视他人感受；不易承认自身脆弱'},
+ ENTP:{n:'开拓者',f:['Ne 外倾直觉','Ti 内倾思考','Fe 外倾情感','Si 内倾感觉'],s:'机敏好辩的创新者。喜欢挑战既有观念，善于从多个角度看问题、提出新点子。',g:'创意丰富、反应快、善于辩论与说服、适应力强',b:'容易虎头蛇尾；为辩而辩；对例行事务和细节缺乏耐心'},
+ INFJ:{n:'洞察者',f:['Ni 内倾直觉','Fe 外倾情感','Ti 内倾思考','Se 外倾感觉'],s:'安静而坚定的理想主义者。对人性有深刻洞察，追求意义，希望帮助他人成长并推动有价值的改变。',g:'洞察人心、富有远见、坚持原则、善于倾听',b:'容易过度付出而耗竭；过于完美主义；不轻易向人敞开'},
+ INFP:{n:'理想主义者',f:['Fi 内倾情感','Ne 外倾直觉','Si 内倾感觉','Te 外倾思考'],s:'温和而有深度的价值追寻者。重视真实与内心信念，富有想象力和同理心，希望做有意义的事。',g:'同理心强、创造力丰富、忠于价值观、包容开放',b:'容易理想化而失望；回避冲突；在执行和条理上较吃力'},
+ ENFJ:{n:'引导者',f:['Fe 外倾情感','Ni 内倾直觉','Se 外倾感觉','Ti 内倾思考'],s:'热情而有感召力的协调者。善于理解并激励他人，乐于组织人群朝共同目标前进。',g:'感染力强、善于沟通与鼓舞、责任感强、关心他人成长',b:'过于在意他人评价；容易替别人做决定；忽略自身需要'},
+ ENFP:{n:'激发者',f:['Ne 外倾直觉','Fi 内倾情感','Te 外倾思考','Si 内倾感觉'],s:'热情洋溢的可能性探索者。好奇心强、点子多，善于发现人和事的潜力并感染周围的人。',g:'热情、创意、善于连接人和想法、适应变化',b:'注意力易分散；难以坚持到底；对规则和细节感到厌烦'},
+ ISTJ:{n:'检查者',f:['Si 内倾感觉','Te 外倾思考','Fi 内倾情感','Ne 外倾直觉'],s:'踏实可靠的执行者。重视责任、规则与事实，做事有条理、讲究准确，是值得信赖的中坚力量。',g:'可靠负责、注重细节、执行力强、尊重规则',b:'可能过于刻板；对新方法抵触；不擅长表达情感'},
+ ISFJ:{n:'守护者',f:['Si 内倾感觉','Fe 外倾情感','Ti 内倾思考','Ne 外倾直觉'],s:'细心体贴的照顾者。默默付出、记得他人的需要，重视稳定与传统，工作认真负责。',g:'体贴周到、耐心细致、忠诚可靠、务实',b:'不善拒绝而过度承担；回避冲突；对变化感到不安'},
+ ESTJ:{n:'管理者',f:['Te 外倾思考','Si 内倾感觉','Ne 外倾直觉','Fi 内倾情感'],s:'务实高效的组织者。重视秩序、规则和结果，擅长把事情安排得井井有条并推动落实。',g:'组织协调、执行高效、直接坦率、责任感强',b:'可能过于强硬或固执；对不同方式缺乏耐心；忽视感受'},
+ ESFJ:{n:'照顾者',f:['Fe 外倾情感','Si 内倾感觉','Ne 外倾直觉','Ti 内倾思考'],s:'热心周到的人际纽带。关注他人的需要，善于营造和谐氛围，重视责任与人情。',g:'热情友善、善于合作、细心周到、组织活动能力强',b:'过于在意认可；难以接受批评；可能过度干预他人'},
+ ISTP:{n:'工匠',f:['Ti 内倾思考','Se 外倾感觉','Ni 内倾直觉','Fe 外倾情感'],s:'冷静务实的问题解决者。喜欢动手了解事物的运作方式，临危不乱，善于应对突发状况。',g:'动手能力强、冷静理性、灵活应变、高效务实',b:'不爱长期承诺和计划；情感表达少；容易对重复工作失去兴趣'},
+ ISFP:{n:'艺术家',f:['Fi 内倾情感','Se 外倾感觉','Ni 内倾直觉','Te 外倾思考'],s:'温柔敏感的体验者。活在当下，重视个人价值与美感，以行动而非言语表达关心。',g:'审美敏锐、温和包容、真诚、灵活',b:'回避冲突与批评；不擅长长期规划；容易低估自己'},
+ ESTP:{n:'行动派',f:['Se 外倾感觉','Ti 内倾思考','Fe 外倾情感','Ni 内倾直觉'],s:'敏锐果敢的实干家。喜欢刺激与挑战，反应迅速，擅长在现场解决问题、把握机会。',g:'行动力强、观察敏锐、善于谈判、临场应变',b:'容易冲动冒险；缺乏长远规划；对理论和规则不耐烦'},
+ ESFP:{n:'表演者',f:['Se 外倾感觉','Fi 内倾情感','Te 外倾思考','Ni 内倾直觉'],s:'活泼热情的生活家。享受当下与人群，善于带动气氛，乐于给周围的人带来快乐。',g:'乐观热情、亲和力强、实际灵活、善于享受生活',b:'容易回避问题和长期规划；注意力易分散；对批评敏感'},
+};
+
+/* ================= 状态 ================= */
+let queue=[], idx=0, answers={}, times={}, shownAt=0, stage='main', tieDims=[];
+const app=document.getElementById('app');
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function mk(arr,prefix){return arr.map((x,i)=>({id:prefix+i,d:x[0],k:x[1],t:x[2],pair:x[3]||null}))}
+const MAIN_ITEMS=mk(MAIN,'m'), TIE_ITEMS=mk(TIE,'t');
+const CHECK_ITEMS=CHECKS.map((c,i)=>({id:'c'+i,...c}));
+
+/* 打乱顺序，并避免同一维度连续出现超过2题；检测题不放在开头 */
+function buildMainQueue(){
+  let best=null;
+  for(let tries=0;tries<200;tries++){
+    const q=shuffle([...MAIN_ITEMS]);
+    let ok=true;
+    for(let i=2;i<q.length;i++) if(q[i].d===q[i-1].d&&q[i].d===q[i-2].d){ok=false;break}
+    if(ok){best=q;break} best=q;
+  }
+  // 将检测题插入到中后段（与原题间隔尽量远）
+  const pos=[22,34,46,56,62];
+  shuffle([...CHECK_ITEMS]).forEach((c,i)=>best.splice(pos[i]+i,0,c));
+  return best;
+}
+
+/* ================= 页面 ================= */
+function intro(){
+  app.innerHTML=`<div class="card">
+   <h1>MBTI 性格类型测试</h1>
+   <p class="muted">精准版 · 约 70 题 · 用时 10–15 分钟</p>
+   <h3>为了让结果尽可能准确，请注意：</h3>
+   <ul class="rules">
+    <li><b>按"真实的你"作答</b>，而不是"理想中的你"或"工作要求的你"。想象自己在没有压力、可以完全放松做自己时的样子。</li>
+    <li><b>以长期的、一贯的表现为准</b>，不要只根据最近一段时间的状态。</li>
+    <li><b>凭第一感觉作答</b>，不必反复斟酌，但请认真读完每一题。</li>
+    <li><b>尽量少选"中立"</b>。只有真的无法判断时再选，否则会降低结果的清晰度。</li>
+    <li>题目没有对错好坏，每种类型都有各自的优势。</li>
+   </ul>
+   <div class="banner">本测试采用 7 级量表、正反向平衡计分，并内置作答一致性与注意力检测。若某个维度处于边界，系统会自动追加几道题以帮助区分。</div>
+   <div style="text-align:right;margin-top:20px"><button class="primary" onclick="start()">开始测试</button></div>
+  </div>
+  <p class="muted" style="text-align:center">说明：本测试基于荣格心理类型理论独立编制，并非 Myers-Briggs 基金会官方 MBTI® 量表，结果仅供自我了解参考。</p>`;
+}
+
+function start(){queue=buildMainQueue();idx=0;answers={};times={};stage='main';render()}
+
+function render(){
+  const it=queue[idx];
+  const total=queue.length;
+  const sel=answers[it.id];
+  const stageLabel=stage==='main'?'':`<span class="tag weak">边界维度加测</span>`;
+  app.innerHTML=`<div class="card">
+   <div class="qmeta"><span>第 ${idx+1} / ${total} 题 ${stageLabel}</span><span>${Math.round(idx/total*100)}%</span></div>
+   <div class="progress"><div style="width:${idx/total*100}%"></div></div>
+   <div class="qtext">${it.t}</div>
+   <div class="scale">
+     <span class="lab">不同意</span>
+     ${[1,2,3,4,5,6,7].map(v=>`<button class="opt ${sel===v?'sel':''}" title="${SCALE_LABELS[v-1]}" onclick="answer(${v})"></button>`).join('')}
+     <span class="lab">同意</span>
+   </div>
+   <div class="hint">${sel?SCALE_LABELS[sel-1]:'从左到右：非常不同意 → 非常同意（键盘 1–7 也可作答）'}</div>
+   <div class="nav">
+     <button onclick="prev()" ${idx===0?'disabled':''}>上一题</button>
+     <button onclick="next()" ${sel?'':'disabled'}>下一题</button>
+   </div>
+  </div>`;
+  shownAt=performance.now();
+}
+
+function answer(v){
+  const it=queue[idx];
+  if(!(it.id in times)) times[it.id]=performance.now()-shownAt;
+  answers[it.id]=v;
+  render();
+  clearTimeout(window._adv);
+  window._adv=setTimeout(next,220);
+}
+function prev(){if(idx>0){idx--;render()}}
+function next(){
+  if(!answers[queue[idx].id]) return;
+  if(idx<queue.length-1){idx++;render();return}
+  finishStage();
+}
+document.addEventListener('keydown',e=>{
+  if(!queue.length||!queue[idx]||!document.querySelector('.scale'))return;
+  const n=parseInt(e.key); if(n>=1&&n<=7) answer(n);
+  if(e.key==='ArrowLeft') prev();
+});
+
+/* ================= 计分 ================= */
+function dimScore(d,includeTie){
+  const items=MAIN_ITEMS.filter(i=>i.d===d).concat(includeTie?TIE_ITEMS.filter(i=>i.d===d&&answers[i.id]):[]);
+  let sum=0,n=0,pos=[],neg=[];
+  items.forEach(i=>{const r=answers[i.id];if(!r)return;const c=i.k*(r-4);sum+=c;n++;(i.k>0?pos:neg).push(c)});
+  const s=n?sum/(3*n):0; // -1..1，正值偏向第一个字母
+  const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length/3:0;
+  return {s,n,pA:avg(pos),pB:avg(neg)};
+}
+
+function finishStage(){
+  if(stage==='main'){
+    tieDims=Object.keys(DIMS).filter(d=>Math.abs(dimScore(d,false).s)<0.12);
+    if(tieDims.length){
+      stage='tie';
+      const extra=shuffle(TIE_ITEMS.filter(i=>tieDims.includes(i.d)));
+      app.innerHTML=`<div class="card"><h2>主测完成</h2>
+        <p>你在 <b>${tieDims.map(d=>DIMS[d].an+'/'+DIMS[d].bn).join('、')}</b> 维度上的倾向非常接近，暂时难以区分。</p>
+        <p>接下来还有 <b>${extra.length}</b> 道补充题，帮助更准确地判断。请继续按真实的自己作答。</p>
+        <div style="text-align:right;margin-top:16px"><button class="primary" id="go">继续</button></div></div>`;
+      document.getElementById('go').onclick=()=>{queue=queue.concat(extra);idx++;render()};
+      return;
+    }
+  }
+  showResult();
+}
+
+function quality(){
+  const mainVals=MAIN_ITEMS.map(i=>answers[i.id]);
+  const res=[];
+  // 1 注意力题
+  const at=CHECK_ITEMS.find(c=>c.attn);
+  const attnOK=answers[at.id]===at.attn;
+  res.push({ok:attnOK,t:attnOK?'注意力检测：通过':'注意力检测：未通过（该题要求选"有点不同意"）'});
+  // 2 前后一致性
+  let incons=0;
+  CHECK_ITEMS.filter(c=>c.chk).forEach(c=>{
+    const orig=MAIN_ITEMS.find(m=>m.pair===c.chk);
+    if(Math.abs(answers[orig.id]-answers[c.id])>=3) incons++;
+  });
+  res.push({ok:incons<=1,t:`前后一致性：4 组同义题中 ${4-incons} 组一致`});
+  // 3 默认同意/不同意倾向（正反题平衡，理论上应接近 4）
+  const mean=mainVals.reduce((a,b)=>a+b,0)/mainVals.length;
+  const acq=mean>5.2?'偏向"都同意"':mean<2.8?'偏向"都不同意"':null;
+  res.push({ok:!acq,t:acq?`作答风格：${acq}（平均 ${mean.toFixed(2)}），可能削弱区分度`:`作答风格：正常（平均 ${mean.toFixed(2)}）`});
+  // 4 中立选项占比 & 同一选项连选
+  const neutral=mainVals.filter(v=>v===4).length/mainVals.length;
+  const cnt={};mainVals.forEach(v=>cnt[v]=(cnt[v]||0)+1);
+  const maxShare=Math.max(...Object.values(cnt))/mainVals.length;
+  res.push({ok:neutral<=0.3,t:`"中立"占比 ${(neutral*100).toFixed(0)}%${neutral>0.3?'，偏高，结果清晰度会下降':''}`});
+  res.push({ok:maxShare<=0.6,t:maxShare>0.6?`同一选项占比 ${(maxShare*100).toFixed(0)}%，疑似机械作答`:'选项分布：正常'});
+  // 5 作答速度
+  const ts=Object.values(times).sort((a,b)=>a-b);const med=ts[Math.floor(ts.length/2)]/1000;
+  res.push({ok:med>=1.5,t:`单题中位用时 ${med.toFixed(1)} 秒${med<1.5?'，过快，可能未认真阅读':''}`});
+  // 6 维度内部矛盾（同时认同两个对立极的题目）
+  const contra=Object.keys(DIMS).filter(d=>{const x=dimScore(d,true);return x.pA*x.pB<0&&Math.abs(x.pA)>0.25&&Math.abs(x.pB)>0.25});
+  res.push({ok:!contra.length,t:contra.length?`内部矛盾：${contra.map(d=>DIMS[d].an+'/'+DIMS[d].bn).join('、')} 维度同时认同了两种相反的描述`:'维度内部一致性：正常'});
+  const fails=res.filter(r=>!r.ok).length;
+  const severe=!attnOK||incons>=2||maxShare>0.6;
+  const level=severe||fails>=3?'低':fails>=1?'中':'高';
+  return {res,level};
+}
+
+function clarity(p){ // p: 0..1
+  if(p<0.1) return ['边界','weak'];
+  if(p<0.3) return ['轻度',''];
+  if(p<0.6) return ['明显',''];
+  return ['非常明显',''];
+}
+
+function showResult(){
+  const sc={};let code='';
+  Object.keys(DIMS).forEach(d=>{sc[d]=dimScore(d,true);code+=sc[d].s>=0?DIMS[d].a:DIMS[d].b});
+  // 正好为 0 时按惯例：I、N、F、P（与官方 MBTI 的平分规则一致）
+  Object.keys(DIMS).forEach((d,i)=>{if(sc[d].s===0){code=code.substring(0,i)+DIMS[d].b+code.substring(i+1)}});
+  const ty=TYPES[code];
+  const q=quality();
+  const border=Object.keys(DIMS).filter(d=>Math.abs(sc[d].s)<0.1);
+  const flip=(c,d)=>{const i=Object.keys(DIMS).indexOf(d);const L=DIMS[d];return c.substring(0,i)+(c[i]===L.a?L.b:L.a)+c.substring(i+1)};
+
+  const bars=Object.keys(DIMS).map(d=>{
+    const L=DIMS[d],s=sc[d].s,pa=Math.round(50+50*s),pb=100-pa,[cl,cc]=clarity(Math.abs(s));
+    const left=s>=0;
+    const fill=left?`left:${50-Math.abs(s)*50}%;width:${Math.abs(s)*50}%`:`left:50%;width:${Math.abs(s)*50}%`;
+    return `<div class="dim">
+      <div class="dimhead"><span><b>${L.a}</b> ${L.an} ${pa}%</span><span>${pb}% ${L.bn} <b>${L.b}</b></span></div>
+      <div class="bar"><div class="fill" style="${fill}"></div><div class="mid"></div></div>
+      <div class="muted">${L.desc}　→ 偏好 <b>${left?L.an:L.bn}</b><span class="tag ${cc}">清晰度：${cl}</span></div>
+    </div>`}).join('');
+
+  const qBanner=q.level==='高'?`<div class="banner">结果可信度：<b>高</b>。作答认真且前后一致。</div>`
+    :q.level==='中'?`<div class="banner warn">结果可信度：<b>中</b>。存在个别作答问题（见下方），结果大体可参考。</div>`
+    :`<div class="banner bad">结果可信度：<b>低</b>。作答质量存在明显问题，建议休息后重新认真作答一次。</div>`;
+
+  let alt='';
+  if(border.length){
+    const alts=border.map(d=>flip(code,d));
+    alt=`<div class="card"><h2>确认你的"最佳匹配类型"</h2>
+      <p>你在 <b>${border.map(d=>DIMS[d].an+'/'+DIMS[d].bn).join('、')}</b> 上几乎没有偏好差异。专业测评中，这种情况需要由本人对照描述做最终判断。请阅读下面的类型，选出更像你的那一个：</p>
+      <div class="grid2">${[code,...alts].map(c=>`<div class="alt"><b>${c}</b> ${TYPES[c].n}<p>${TYPES[c].s}</p><p class="muted">优势：${TYPES[c].g}</p></div>`).join('')}</div>
+      <p class="muted">提示：回想自己在放松、不需要扮演任何角色时的自然状态，再做选择。</p></div>`;
+  }
+
+  window._summary=`我的测试结果：${code}（${ty.n}）\n`+Object.keys(DIMS).map(d=>{const pa=Math.round(50+50*sc[d].s);return `${DIMS[d].a} ${pa}% / ${DIMS[d].b} ${100-pa}%`}).join('\n')+`\n结果可信度：${q.level}`;
+
+  app.innerHTML=`<div class="card" style="text-align:center">
+    <div class="muted">你的类型</div>
+    <div class="type">${code}</div>
+    <div style="font-size:20px;font-weight:600">${ty.n}</div>
+    <p style="max-width:520px;margin:12px auto 0">${ty.s}</p>
+  </div>
+  <div class="card"><h2>四个维度的偏好</h2>${bars}
+    <p class="muted">百分比表示你在该维度上倾向两端的程度，不代表能力高低。"边界"表示两种偏好几乎相当。</p></div>
+  ${alt}
+  <div class="card"><h2>类型解读</h2>
+    <h3>核心优势</h3><p>${ty.g}</p>
+    <h3>可能的盲点</h3><p>${ty.b}</p>
+    <h3>认知功能顺序</h3>
+    <div class="funcs">${ty.f.map((x,i)=>`<span>${['主导','辅助','第三','劣势'][i]}：${x}</span>`).join('')}</div>
+  </div>
+  <div class="card"><h2>作答质量报告</h2>${qBanner}
+    <ul class="quality">${q.res.map(r=>`<li class="${r.ok?'ok':'no'}">${r.ok?'✓':'✗'} <span style="color:var(--ink)">${r.t}</span></li>`).join('')}</ul>
+    ${tieDims.length?`<p class="muted">已对 ${tieDims.map(d=>DIMS[d].an+'/'+DIMS[d].bn).join('、')} 维度追加补充题。</p>`:''}
+  </div>
+  <div class="card"><h2>如何看待这个结果</h2>
+    <p>性格类型描述的是<b>偏好</b>，就像惯用手：你两只手都能用，只是一只更自然。清晰度为"明显"以上的维度通常比较稳定；"轻度"或"边界"的维度，在不同时期重测可能会变化，这是正常现象。</p>
+    <p>如果结果和你的自我认知不符，建议隔 2–4 周、在放松状态下重测一次，并对照多个类型的描述自行判断。</p>
+  </div>
+  <div style="display:flex;gap:12px;justify-content:center">
+    <button onclick="navigator.clipboard.writeText(window._summary).then(()=>this.textContent='已复制')">复制结果</button>
+    <button class="primary" onclick="intro()">重新测试</button>
+  </div>`;
+  window.scrollTo(0,0);
+}
+
+intro();
+</script>
+</body>
+</html>
